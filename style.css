@@ -310,3 +310,86 @@ button:disabled {
     background-color: #FFB6C1 !important; /* Light Pink */
     box-shadow: inset 0 0 10px red;
 }
+
+/* Responsive Design for Mobile (Portrait) */
+@media screen and (max-width: 600px) {
+    :root {
+        /* Dynamically fit 10x10 grid + clues within viewport width.
+           Assuming roughly: (100vw - 30px (row clues) - 20px (padding)) / 10 cells
+        */
+        --cell-size: min(8.5vw, 45px); 
+        --gap-size: 2px;
+    }
+
+    body {
+        padding: 5px;
+    }
+
+    .game-container {
+        width: 100%;
+        max-width: 100%;
+        gap: 10px;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+        margin: 10px 0;
+    }
+
+    .controls {
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .score-board {
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    .controls button, .controls label {
+        flex: 1 1 40%;
+        font-size: 0.9rem;
+        padding: 8px;
+        white-space: nowrap;
+    }
+
+    /* Shrink clue areas */
+    .row-clue {
+        width: 20px;
+        font-size: 0.85em;
+        padding-right: 2px;
+    }
+
+    .col-clue {
+        height: 25px; 
+        font-size: 0.85em;
+        padding-bottom: 2px;
+    }
+
+    /* Pips scaling */
+    .pip-container {
+        grid-template-columns: repeat(3, 20%);
+        grid-template-rows: repeat(3, 20%);
+        gap: 5%;
+        width: 60%;
+        height: 60%;
+    }
+    .pip {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .domino-part, .domino-preview-part {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .palette {
+        gap: 10px;
+        transform: scale(0.9); /* Slightly smaller palette */
+    }
+}

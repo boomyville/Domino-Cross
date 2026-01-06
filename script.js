@@ -10,7 +10,7 @@ class DominoCrossGame {
         this.colClues = [];
         this.activeDomino = null;
         
-        this.score = 200;
+        this.score = 2000;
         this.timerInterval = null;
         this.hintCooldownTimer = null;
         this.inputLocked = false;
@@ -48,7 +48,7 @@ class DominoCrossGame {
         console.log(`Starting new game: ${this.gridSize}x${this.gridSize}`);
 
         this.stopTimer();
-        this.score = 200;
+        this.score = 2000;
         this.updateScoreDisplay();
         this.startTimer();
         
@@ -71,9 +71,9 @@ class DominoCrossGame {
     }
 
     restartLevel() {
-        if (!confirm("Restart current level? Your score will reset to 200.")) return;
+        if (!confirm("Restart current level? Your score will reset to 2000.")) return;
         
-        this.score = 200;
+        this.score = 2000;
         this.updateScoreDisplay();
         this.stopTimer();
         this.startTimer();
@@ -134,7 +134,7 @@ class DominoCrossGame {
             else this.hintBtn.title = `Fill more than 50% to use hint (${Math.floor(fillPercentage*100)}%)`;
         } else {
             this.hintBtn.disabled = false;
-            this.hintBtn.title = "Use hint (-40 points)";
+            this.hintBtn.title = "Use hint (-200 points)";
         }
     }
 
@@ -204,7 +204,7 @@ class DominoCrossGame {
         const now = Date.now();
         if (now - this.lastHintTime < 30000) return; // double check
 
-        this.score = Math.max(0, this.score - 40);
+        this.score = Math.max(0, this.score - 200);
         this.updateScoreDisplay();
         
         this.lastHintTime = now;
