@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domino Cross</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Domino Cross</h1>
+        
+        <div class="controls">
+            <div class="score-board">Score: <span id="score">200</span></div>
+            <label>Difficulty: 
+                <select id="difficulty-select">
+                    <option value="easy">Easy (6x6)</option>
+                    <option value="medium">Medium (8x8)</option>
+                    <option value="hard">Hard (10x10)</option>
+                </select>
+            </label>
+            <button id="hint-btn">Hint (-40)</button>
+            <button id="restart-btn">Restart Level</button>
+            <button id="new-game-btn">New Game</button>
+        </div>
+
+        <div class="main-area">
+            <div class="corner-empty"></div>
+            <div class="col-clues" id="col-clues"></div>
+            <div class="row-clues" id="row-clues"></div>
+            <div class="grid" id="grid"></div>
+        </div>
+
+        <div class="palette-container">
+            <h3>Domino Pieces</h3>
+            <div class="palette" id="palette">
+                <!-- Domino tools generated here -->
+            </div>
+            <p>Select a domino and click on the grid to place it. Right click to remove.</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
