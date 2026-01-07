@@ -53,7 +53,10 @@ class DominoCrossGame {
 
         this.continueBtn.addEventListener('click', () => this.continueGame());
         this.resetDataBtn.addEventListener('click', () => this.resetData());
-        this.backToMenuBtn.addEventListener('click', () => this.showTitleScreen());
+        this.backToMenuBtn.addEventListener('click', () => {
+            localStorage.removeItem('dominoCrossSave');
+            this.showTitleScreen();
+        });
 
         this.hintBtn.addEventListener('click', () => this.useHint());
 
@@ -146,7 +149,14 @@ class DominoCrossGame {
             if (this.score > 0) {
                 this.score--;
                 this.updateScoreDisplay();
-                if (this.score % 5 === 0) this.saveGame(); // Save every 5 seconds roughly
+                
+                // Periodic save (every 5 seconds)
+                if (this.score % 5 === 0) {
+                    this.saveGame();
+                }
+                
+                // Periodic win check (failsafe)
+                this.checkWinCondition();
             }
         }, 1000);
     }
@@ -184,10 +194,10 @@ class DominoCrossGame {
         const playableCells = totalCount - obstacleCount;
         const fillPercentage = filledCount / playableCells;
 
-        if (onCooldown || fillPercentage <= 0.5) {
+        if (onCooldown || fillPercentage < 0.5) {
             this.hintBtn.disabled = true;
             if (onCooldown) this.hintBtn.title = "On cooldown";
-            else this.hintBtn.title = `Fill more than 50% to use hint (${Math.floor(fillPercentage*100)}%)`;
+            else this.hintBtn.title = `Fill 50% or more to use hint (${Math.floor(fillPercentage*100)}%)`;
         } else {
             this.hintBtn.disabled = false;
             this.hintBtn.title = "Use hint (-200 points)";
@@ -820,7 +830,7 @@ class DominoCrossGame {
         if (cell !== null) {
             if (!cell.obstacle) {
                 this.removeDomino(r, c);
-                this.saveGame(); // Save on removal
+                // Save is handled by timer loop to prevent lag
             }
             return;
         }
@@ -834,7 +844,6 @@ class DominoCrossGame {
                 // Place Vertical
                 this.userGrid[r][c] = { val: type.top, type: 'V', isHead: true, pId: type.id };
                 this.userGrid[r+1][c] = { val: type.bottom, type: 'V', isHead: false, pId: type.id };
-                this.saveGame();
                 this.render();
             }
         } else {
@@ -842,7 +851,6 @@ class DominoCrossGame {
                 // Place Horizontal
                 this.userGrid[r][c] = { val: type.top, type: 'H', isHead: true, pId: type.id };
                 this.userGrid[r][c+1] = { val: type.bottom, type: 'H', isHead: false, pId: type.id };
-                this.saveGame();
                 this.render();
             }
         }
@@ -941,7 +949,7 @@ class DominoCrossGame {
             list.appendChild(li);
         });
 
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
     }
 }
 
