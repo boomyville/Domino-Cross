@@ -4,26 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Domino Cross</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
-        <h1>Domino Cross</h1>
+    <div id="title-screen" class="title-screen">
+        <div class="logo-container">
+            <img src="title.png" width="50%" alt="Domino Cross Logo" class="logo">
+        </div>
         
-        <div class="controls">
-            <div class="score-board">Score: <span id="score">200</span></div>
-            <label>Difficulty: 
-                <select id="difficulty-select">
-                    <option value="easy">Easy (6x6)</option>
-                    <option value="medium">Medium (8x8)</option>
-                    <option value="hard">Hard (10x10)</option>
-                </select>
-            </label>
-            <button id="hint-btn">Hint (-200)</button>
-            <button id="restart-btn">Restart Level</button>
-            <button id="new-game-btn">New Game</button>
+        <div class="menu-buttons">
+            <button id="continue-btn" class="menu-btn">Continue Game</button>
+            <h3>Select Difficulty</h3>
+            <div class="difficulty-grid">
+                <button class="menu-btn" data-diff="very-easy">Very Easy (4x4)</button>
+                <button class="menu-btn" data-diff="easy">Easy (6x6)</button>
+                <button class="menu-btn" data-diff="medium">Medium (8x8)</button>
+                <button class="menu-btn" data-diff="hard">Hard (10x10)</button>
+            </div>
         </div>
 
+        <div class="menu-footer">
+            <button id="reset-data-btn" class="danger-btn">Reset All Data</button>
+        </div>
+    </div>
+
+    <div class="game-container hidden">
+        <div class="game-left-panel">
+            <h1>Domino<br>Cross</h1>
+            <div class="controls">
+                <div class="score-board">Score: <span id="score">2000</span></div>
+                
+                <div style="display:none;">
+                    <select id="difficulty-select">
+                        <option value="very-easy">Very Easy</option>
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+                
+                <button id="hint-btn">Hint (-200)</button>
+                <button id="restart-btn" style="display:none;">Restart Level</button>
+                <button id="back-to-menu-btn">Exit to Menu</button>
+            </div>
+        </div>
+        
         <div class="main-area">
             <div class="corner-empty"></div>
             <div class="col-clues" id="col-clues"></div>
@@ -31,12 +57,68 @@
             <div class="grid" id="grid"></div>
         </div>
 
-        <div class="palette-container">
-            <h3>Domino Pieces</h3>
-            <div class="palette" id="palette">
-                <!-- Domino tools generated here -->
+        <div class="game-right-panel">
+            <div class="palette-container">
+                <h3>Domino Pieces</h3>
+                <div class="palette" id="palette">
+                    <!-- Domino tools generated here -->
+                </div>
+                <p>Select a domino and click on the grid to place it. Right click to remove.</p>
             </div>
-            <p>Select a domino and click on the grid to place it. Right click to remove.</p>
+        </div>
+    </div>
+
+    <div id="instruction-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-modal">&times;</span>
+            <h2>How to Play</h2>
+            
+            <div class="instruction-body">
+                <div class="instruction-step">
+                    <p>The numbers on the sides tell you the sum of dots (pips) in that row or column.</p>
+                    <div class="mini-grid-container">
+                        <!-- CSS Generated Example -->
+                        <div class="mini-grid" id="example-grid">
+                            <div class="mini-clue-corner"></div>
+                            <div class="mini-clue-col">1</div>
+                            <div class="mini-clue-col">3</div>
+                            <div class="mini-clue-row">2</div>
+                            <div class="mini-cell"></div>
+                            <div class="mini-cell"></div>
+                            <div class="mini-clue-row">2</div>
+                            <div class="mini-cell"></div>
+                            <div class="mini-cell"></div>
+                        </div>
+                        <div class="arrow">➜</div>
+                        <div class="mini-grid" id="example-grid-solved">
+                            <div class="mini-clue-corner"></div>
+                            <div class="mini-clue-col correct">1</div>
+                            <div class="mini-clue-col correct">3</div>
+                            <div class="mini-clue-row correct">2</div>
+                            <div class="mini-cell filled p1"></div>
+                            <div class="mini-cell filled p1"></div>
+                            <div class="mini-clue-row correct">2</div>
+                            <div class="mini-cell filled p0"></div>
+                            <div class="mini-cell filled p2"></div>
+                        </div>
+                    </div>
+                </div>
+                <p>Fill the grid with dominos so that every row and column sum matches the clues!</p>
+                <button id="start-playing-btn">Start Playing</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="highScoreModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="document.getElementById('highScoreModal').style.display='none'">&times;</span>
+            <h2>Victory!</h2>
+            <div id="currentScoreDisplay" style="font-size: 1.5em; margin: 10px 0; font-weight: bold; color: var(--clue-correct);"></div>
+            <h3>Top 5 High Scores (<span id="highScoreDifficulty"></span>)</h3>
+            <ul id="highScoreList" style="list-style: none; padding: 0; text-align: left; max-width: 300px; margin: 0 auto;"></ul>
+            <div style="margin-top:20px;">
+                <button class="primary-btn" onclick="document.getElementById('highScoreModal').style.display='none'">Close</button>
+            </div>
         </div>
     </div>
 

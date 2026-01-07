@@ -9,6 +9,7 @@ class DominoCrossGame {
         this.rowClues = [];
         this.colClues = [];
         this.activeDomino = null;
+        this.availableShapes = []; 
         
         this.score = 2000;
         this.timerInterval = null;
@@ -17,35 +18,95 @@ class DominoCrossGame {
         this.lastHintTime = 0;
 
         // DOM Elements
+        this.titleScreen = document.getElementById('title-screen');
+        this.gameContainer = document.querySelector('.game-container');
+        this.continueBtn = document.getElementById('continue-btn');
+        this.resetDataBtn = document.getElementById('reset-data-btn');
+        this.backToMenuBtn = document.getElementById('back-to-menu-btn');
+        
         this.gridEl = document.getElementById('grid');
         this.paletteEl = document.getElementById('palette');
         this.rowCluesEl = document.getElementById('row-clues');
         this.colCluesEl = document.getElementById('col-clues');
         this.difficultySelect = document.getElementById('difficulty-select');
-        this.newGameBtn = document.getElementById('new-game-btn');
         this.scoreEl = document.getElementById('score');
         this.hintBtn = document.getElementById('hint-btn');
-        this.restartBtn = document.getElementById('restart-btn');
+        
+        // Modal logic
+        this.modal = document.getElementById('instruction-modal');
+        this.closeModalBtn = document.getElementById('close-modal');
+        this.startPlayingBtn = document.getElementById('start-playing-btn');
 
-        this.newGameBtn.addEventListener('click', () => this.startNewGame(true));
-        this.difficultySelect.addEventListener('change', () => this.startNewGame(true));
-        this.restartBtn.addEventListener('click', () => this.restartLevel());
+        this.closeModalBtn.onclick = () => this.modelClose();
+        this.startPlayingBtn.onclick = () => this.modelClose();
+        window.onclick = (e) => {
+            if (e.target == this.modal) this.modelClose();
+        }
+
+        // Title Screen Events
+        document.querySelectorAll('.menu-btn[data-diff]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const diff = btn.getAttribute('data-diff');
+                this.startNewGame(diff);
+            });
+        });
+
+        this.continueBtn.addEventListener('click', () => this.continueGame());
+        this.resetDataBtn.addEventListener('click', () => this.resetData());
+        this.backToMenuBtn.addEventListener('click', () => this.showTitleScreen());
+
         this.hintBtn.addEventListener('click', () => this.useHint());
 
-        if (this.loadGame()) {
-            this.render();
-            this.startTimer();
+        // Initialize
+        this.showTitleScreen();
+    }
+
+    modelClose() {
+        this.modal.classList.remove('show');
+    }
+
+    showTitleScreen() {
+        this.stopTimer();
+        this.titleScreen.classList.remove('hidden');
+        this.gameContainer.classList.add('hidden');
+        
+        // Check for save
+        const saved = localStorage.getItem('dominoCrossSave');
+        if (saved) {
+            this.continueBtn.style.display = 'block';
+            this.continueBtn.textContent = `Continue Game`;
         } else {
-            this.startNewGame(true);
+            this.continueBtn.style.display = 'none';
         }
     }
 
-    startNewGame(isNew = false) {
-        if (!isNew) return; // Legacy calling convention
+    resetData() {
+        if(confirm("Are you sure you want to delete ALL data including high scores and saved games?")) {
+            localStorage.clear();
+            alert("Data reset.");
+            this.showTitleScreen();
+        }
+    }
 
-        const difficulty = this.difficultySelect.value;
+    continueGame() {
+        if (this.loadGame()) {
+            this.titleScreen.classList.add('hidden');
+            this.gameContainer.classList.remove('hidden');
+            this.render();
+            this.startTimer();
+        } else {
+            alert("Failed to load game save.");
+            this.showTitleScreen();
+        }
+    }
+
+    startNewGame(difficulty) {
+        this.difficultySelect.value = difficulty; // Sync hidden select
         this.setupDifficulty(difficulty);
         console.log(`Starting new game: ${this.gridSize}x${this.gridSize}`);
+
+        this.titleScreen.classList.add('hidden');
+        this.gameContainer.classList.remove('hidden');
 
         this.stopTimer();
         this.score = 2000;
@@ -53,13 +114,11 @@ class DominoCrossGame {
         this.startTimer();
         
         this.inputLocked = false;
-        this.hintBtn.disabled = true; // Disabled until 50%
+        this.hintBtn.disabled = true; 
         this.lastHintTime = 0; 
         
-        // Clear any existing timeouts if restart happens during hint
         if(this.hintTimeout) clearTimeout(this.hintTimeout);
 
-        // Retry generation until successful (tiling can fail strictly randomly, though rare for small grids)
         let success = false;
         while (!success) {
             success = this.generateLevel();
@@ -69,20 +128,17 @@ class DominoCrossGame {
         this.saveGame();
         this.render();
     }
+    
+    // Removed duplicate startNewGame/restartLevel from below, relying on these new methods
+    // Legacy restartLevel is replaced by back button logic effectively, or we can keep it for "Restart Level" button support if we kept it?
+    // We hid key restart button, but let's keep the method just in case or delete it.
+    // Actually, user said "when restart game it moves back to title screen".
+    // I mapped "Exit to Menu" to showTitleScreen.
+    // If there is another "Restart Level" button (I hid it), it should probably still work as actual level restart
+    // Or I should make "Restart Level" go to title screen?
+    // Prompt: "when player clicks restart game it actually moves the game back to title screen"
+    // So if I kept the button, it calls showTitleScreen.
 
-    restartLevel() {
-        if (!confirm("Restart current level? Your score will reset to 2000.")) return;
-        
-        this.score = 2000;
-        this.updateScoreDisplay();
-        this.stopTimer();
-        this.startTimer();
-        this.inputLocked = false;
-        this.lastHintTime = 0;
-        this.initUserGrid(); // Resets to just obstacles
-        this.saveGame();
-        this.render();
-    }
 
     startTimer() {
         if (this.timerInterval) clearInterval(this.timerInterval);
@@ -281,18 +337,45 @@ class DominoCrossGame {
     }
 
     setupDifficulty(diff) {
-        if (diff === 'easy') {
+        if (diff === 'very-easy') {
+            this.gridSize = 4;
+            this.maxPips = 2; // Simple numbers
+            this.numDominoTypes = 2; 
+            this.availableShapes = [
+                { type: 'H2', cells: [[0,0], [0,1]], name: 'Horizontal 2' },
+                { type: 'V2', cells: [[0,0], [1,0]], name: 'Vertical 2' }
+            ];
+        } else if (diff === 'easy') {
             this.gridSize = 6;
             this.maxPips = 3;
             this.numDominoTypes = 2; // 1 Vertical, 1 Horizontal
+            this.availableShapes = [
+                { type: 'H2', cells: [[0,0], [0,1]], name: 'Horizontal 2' },
+                { type: 'V2', cells: [[0,0], [1,0]], name: 'Vertical 2' }
+            ];
         } else if (diff === 'medium') {
             this.gridSize = 8;
             this.maxPips = 5;
             this.numDominoTypes = 2;
+            this.availableShapes = [
+                { type: 'H2', cells: [[0,0], [0,1]], name: 'Horizontal 2' },
+                { type: 'V2', cells: [[0,0], [1,0]], name: 'Vertical 2' }
+            ];
         } else {
             this.gridSize = 10;
             this.maxPips = 6;
-            this.numDominoTypes = 3; // Maybe 2 Vert, 1 Horiz or vice versa
+            this.numDominoTypes = 4; 
+            // Add 3-cell shapes: H3, V3, L-shapes
+            this.availableShapes = [
+                { type: 'H2', cells: [[0,0], [0,1]], name: 'Horizontal 2' },
+                { type: 'V2', cells: [[0,0], [1,0]], name: 'Vertical 2' },
+                { type: 'H3', cells: [[0,0], [0,1], [0,2]], name: 'Horizontal 3' },
+                { type: 'V3', cells: [[0,0], [1,0], [2,0]], name: 'Vertical 3' },
+                { type: 'L_BR', cells: [[0,0], [0,1], [1,1]], name: 'L (Bottom-Right)' }, // 7 shape
+                { type: 'L_BL', cells: [[0,0], [0,1], [1,0]], name: 'L (Bottom-Left)' }, // r shape
+                { type: 'L_TR', cells: [[1,0], [1,1], [0,1]], name: 'L (Top-Right)' }, // J shape
+                { type: 'L_TL', cells: [[1,0], [1,1], [0,0]], name: 'L (Top-Left)' }  // L shape
+            ];
         }
     }
     
@@ -484,6 +567,46 @@ class DominoCrossGame {
                 return null;
             })
         );
+        
+        if (this.difficultySelect.value === 'very-easy') {
+            this.prefillVeryEasy();
+        }
+    }
+
+    prefillVeryEasy() {
+        const heads = [];
+        for(let r=0; r<this.gridSize; r++) {
+            for(let c=0; c<this.gridSize; c++) {
+                // relying on this.grid for structure (H/V, part 1/2)
+                // relying on this.solution for values/obstacles
+                if (this.grid[r][c] && this.grid[r][c].part === 1) {
+                    const sol = this.solution[r][c];
+                    if (!sol.obstacle) {
+                        heads.push({r, c});
+                    }
+                }
+            }
+        }
+
+        // Shuffle and pick 2
+        heads.sort(() => Math.random() - 0.5);
+        const toReveal = heads.slice(0, 2);
+
+        toReveal.forEach(pos => {
+            const {r, c} = pos;
+            const solHead = this.solution[r][c];
+            const type = this.grid[r][c].type; // 'H' or 'V'
+            
+            if (type === 'H') {
+                const solTail = this.solution[r][c+1];
+                this.userGrid[r][c] = { val: solHead.val, type: 'H', isHead: true, pId: solHead.pId };
+                this.userGrid[r][c+1] = { val: solTail.val, type: 'H', isHead: false, pId: solTail.pId };
+            } else {
+                const solTail = this.solution[r+1][c];
+                this.userGrid[r][c] = { val: solHead.val, type: 'V', isHead: true, pId: solHead.pId };
+                this.userGrid[r+1][c] = { val: solTail.val, type: 'V', isHead: false, pId: solTail.pId };
+            }
+        });
     }
 
     render() {
@@ -615,11 +738,55 @@ class DominoCrossGame {
 
     renderPalette() {
         this.paletteEl.innerHTML = '';
+        
+        // Count totals needed
+        const diff = this.difficultySelect.value;
+        const showCounts = (diff === 'easy' || diff === 'very-easy');
+        const counts = {}; // pId -> {total, current}
+
+        if (showCounts) {
+            // Init
+            this.dominoTypes.forEach(t => counts[t.id] = {total: 0, current: 0});
+
+            // Calculate Totals from solution
+            for(let r=0; r<this.gridSize; r++) {
+                for(let c=0; c<this.gridSize; c++) {
+                    const sol = this.solution[r][c];
+                    // Only count heads to avoid double counting per domino (since 1 domino = 2 cells)
+                    // Or since solution grid stores values for each cell, we can just count every cell that matches a pId
+                    // Actually, let's count occurrences of pId in solution / 2
+                    if (sol && !sol.obstacle && sol.pId !== undefined) {
+                         counts[sol.pId].total += 0.5;
+                    }
+                }
+            }
+
+            // Calculate Current from User Grid
+             for(let r=0; r<this.gridSize; r++) {
+                for(let c=0; c<this.gridSize; c++) {
+                    const cell = this.userGrid[r][c];
+                    if (cell && !cell.obstacle && cell.pId !== undefined) {
+                         counts[cell.pId].current += 0.5;
+                    }
+                }
+            }
+        }
+
         this.dominoTypes.forEach((type, index) => {
             const item = document.createElement('div');
             item.className = 'palette-item';
             if (this.activeDomino === type) item.classList.add('selected');
             
+            // Add Badge
+            if (showCounts) {
+                const c = counts[type.id];
+                const remaining = Math.max(0, Math.ceil(c.total - c.current));
+                const badge = document.createElement('div');
+                badge.className = 'count-badge';
+                badge.textContent = `x${remaining}`;
+                item.appendChild(badge);
+            }
+
             item.onclick = () => {
                 this.activeDomino = type;
                 this.renderPalette();
@@ -723,7 +890,58 @@ class DominoCrossGame {
         }
 
         this.stopTimer();
-        setTimeout(() => alert(`You Won! Final Score: ${this.score}`), 100);
+        this.saveHighScore();
+        setTimeout(() => this.showHighScoreModal(), 300);
+    }
+
+    saveHighScore() {
+        const diff = this.difficultySelect.value;
+        const key = `dominoCross_highScores_${diff}`;
+        let scores = JSON.parse(localStorage.getItem(key)) || [];
+        
+        scores.push({
+            score: this.score,
+            date: new Date().toLocaleString()
+        });
+
+        // Sort descending
+        scores.sort((a, b) => b.score - a.score);
+        
+        // Keep top 5
+        scores = scores.slice(0, 5);
+        
+        localStorage.setItem(key, JSON.stringify(scores));
+    }
+
+    showHighScoreModal() {
+        const modal = document.getElementById('highScoreModal');
+        const scoreDisplay = document.getElementById('currentScoreDisplay');
+        const diffSpan = document.getElementById('highScoreDifficulty');
+        const list = document.getElementById('highScoreList');
+        
+        const diff = this.difficultySelect.value;
+        const key = `dominoCross_highScores_${diff}`;
+        const scores = JSON.parse(localStorage.getItem(key)) || [];
+
+        scoreDisplay.textContent = `Final Score: ${this.score}`;
+        diffSpan.textContent = diff.replace('-', ' ').toUpperCase();
+        
+        list.innerHTML = '';
+        scores.forEach((entry, idx) => {
+            const li = document.createElement('li');
+            li.style.padding = '5px 0';
+            li.style.borderBottom = '1px solid #eee';
+            li.style.display = 'flex';
+            li.style.justifyContent = 'space-between';
+            
+            const isCurrent = (entry.score === this.score && entry.date === new Date().toLocaleString()); // Rough check, maybe add ID if needed but fine for now
+            if(idx === 0) li.style.fontWeight = 'bold';
+            
+            li.innerHTML = `<span>${idx + 1}. ${entry.score} pts</span> <span style="font-size:0.8em; color:#666;">${entry.date}</span>`;
+            list.appendChild(li);
+        });
+
+        modal.style.display = 'block';
     }
 }
 
