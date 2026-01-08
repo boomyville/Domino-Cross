@@ -149,9 +149,9 @@ class DominoCrossGame {
             if (this.score > 0) {
                 // Decay based on difficulty
                 let decay = 1;
-                const diff = this.difficultySelect.value;
-                if (diff === 'medium') decay = 2;
-                if (diff === 'hard') decay = 5; // Fast decay for Hard mode
+                //const diff = this.difficultySelect.value;
+                //if (diff === 'medium') decay = 2;
+                //if (diff === 'hard') decay = 5; // Fast decay for Hard mode
 
                 this.score = Math.max(0, this.score - decay);
                 this.updateScoreDisplay();
