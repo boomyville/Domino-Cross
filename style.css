@@ -316,7 +316,8 @@ button:disabled { background-color: #cccccc; cursor: not-allowed; }
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    padding-top: 60px;
+    padding-bottom: 40px;
     min-height: 80vh;
     text-align: center;
     gap: 30px;
@@ -556,7 +557,13 @@ button:disabled { background-color: #cccccc; cursor: not-allowed; }
         --gap-size: 2px;
     }
     .palette { transform: scale(0.9); }
-    .pip-container { gap: 5%; width: 60%; height: 60%; }
+    .pip-container { 
+        gap: 2px; 
+        width: 70%; 
+        height: 70%; 
+        grid-template-columns: repeat(3, 1fr); 
+        grid-template-rows: repeat(3, 1fr); 
+    }
 }
 
  / *   C o l o r - c o d e d   D i f f i c u l t y   B u t t o n s   * / 

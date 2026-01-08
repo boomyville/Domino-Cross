@@ -147,16 +147,19 @@ class DominoCrossGame {
         if (this.timerInterval) clearInterval(this.timerInterval);
         this.timerInterval = setInterval(() => {
             if (this.score > 0) {
-                this.score--;
+                // Decay based on difficulty
+                let decay = 1;
+                const diff = this.difficultySelect.value;
+                if (diff === 'medium') decay = 2;
+                if (diff === 'hard') decay = 5; // Fast decay for Hard mode
+
+                this.score = Math.max(0, this.score - decay);
                 this.updateScoreDisplay();
                 
-                // Periodic save (every 5 seconds)
-                if (this.score % 5 === 0) {
-                    this.saveGame();
-                }
-                
-                // Periodic win check (failsafe)
-                this.checkWinCondition();
+                // Periodic save (approx every 5s-ish logic check, but let's just save on moves usually)
+                // Saving every second is too much I/O maybe? keeping it every 5 ticks of pure counter or just check time?
+                // The original code was score % 5, which with decay 5 happens every tick.
+                // Let's rely on moves for saving, but maybe just periodic check logic is fine.
             }
         }, 1000);
     }
@@ -194,10 +197,12 @@ class DominoCrossGame {
         const playableCells = totalCount - obstacleCount;
         const fillPercentage = filledCount / playableCells;
 
-        if (onCooldown || fillPercentage < 0.5) {
+        if (onCooldown) {
             this.hintBtn.disabled = true;
-            if (onCooldown) this.hintBtn.title = "On cooldown";
-            else this.hintBtn.title = `Fill 50% or more to use hint (${Math.floor(fillPercentage*100)}%)`;
+            this.hintBtn.title = "On cooldown (30s)";
+        } else if (fillPercentage < 0.25) { // Relaxed to 25% to be more accessible
+            this.hintBtn.disabled = true;
+            this.hintBtn.title = `Fill 25% or more to use hint (${Math.floor(fillPercentage*100)}%)`;
         } else {
             this.hintBtn.disabled = false;
             this.hintBtn.title = "Use hint (-200 points)";
@@ -264,7 +269,7 @@ class DominoCrossGame {
             }
         }
         const playable = (this.gridSize * this.gridSize) - obstacleCount;
-        if (filledCount / playable <= 0.5) return;
+        if (filledCount / playable < 0.25) return;
 
 
         const now = Date.now();
@@ -374,7 +379,7 @@ class DominoCrossGame {
         } else {
             this.gridSize = 10;
             this.maxPips = 6;
-            this.numDominoTypes = 4; 
+            this.numDominoTypes = 3; 
             // Add 3-cell shapes: H3, V3, L-shapes
             this.availableShapes = [
                 { type: 'H2', cells: [[0,0], [0,1]], name: 'Horizontal 2' },
@@ -416,46 +421,60 @@ class DominoCrossGame {
     }
 
     createRandomTiling() {
-        // Simple randomized greedy algorithm
-        const available = [];
+        // Robust Algorithm: Deterministic Fill + Random Shuffle (Tiling by Flips)
+        // This guarantees a valid tiling and prevents freezing/crashing on large grids (10x10).
+
+        // 1. Initial Fill: All Horizontal
+        // (Assumes even grid size, which is true for 4, 6, 8, 10)
         for (let r = 0; r < this.gridSize; r++) {
-            for (let c = 0; c < this.gridSize; c++) {
-                available.push({r, c});
-            }
-        }
-        
-        // Shuffle positions
-        available.sort(() => Math.random() - 0.5);
-
-        for (let pos of available) {
-            const {r, c} = pos;
-            if (this.grid[r][c] !== null) continue;
-
-            const neighbors = [];
-            // Try Horizontal
-            if (c + 1 < this.gridSize && this.grid[r][c+1] === null) neighbors.push('H');
-            // Try Vertical
-            if (r + 1 < this.gridSize && this.grid[r+1][c] === null) neighbors.push('V');
-
-            if (neighbors.length === 0) return false; // Stuck, retry whole generation
-
-            const choice = neighbors[Math.floor(Math.random() * neighbors.length)];
-            
-            if (choice === 'H') {
+            for (let c = 0; c < this.gridSize; c += 2) {
                 this.grid[r][c] = { type: 'H', part: 1 };
                 this.grid[r][c+1] = { type: 'H', part: 2 };
-            } else {
+            }
+        }
+
+        // 2. Shuffle by flipping 2x2 blocks
+        // N * N * 20 provides good randomization without performance hit
+        const moves = this.gridSize * this.gridSize * 20; 
+        
+        for (let i = 0; i < moves; i++) {
+            // Pick random top-left corner of a 2x2 block
+            const r = Math.floor(Math.random() * (this.gridSize - 1));
+            const c = Math.floor(Math.random() * (this.gridSize - 1));
+
+            const cellTL = this.grid[r][c];     // Top-Left
+            const cellTR = this.grid[r][c+1];   // Top-Right
+            const cellBL = this.grid[r+1][c];   // Bottom-Left
+            // const cellBR = this.grid[r+1][c+1]; // Bottom-Right (implied)
+
+            // Case A: Two Horizontal rows stacked
+            // [H1 H2]
+            // [H1 H2]
+            if (cellTL.type === 'H' && cellTL.part === 1 &&
+                cellBL.type === 'H' && cellBL.part === 1) {
+                
+                // Flip to Vertical
                 this.grid[r][c] = { type: 'V', part: 1 };
                 this.grid[r+1][c] = { type: 'V', part: 2 };
+                
+                this.grid[r][c+1] = { type: 'V', part: 1 };
+                this.grid[r+1][c+1] = { type: 'V', part: 2 };
+            }
+            // Case B: Two Verticals side-by-side
+            // [V1 V1]
+            // [V2 V2]
+            else if (cellTL.type === 'V' && cellTL.part === 1 &&
+                     cellTR.type === 'V' && cellTR.part === 1) {
+                
+                // Flip to Horizontal
+                this.grid[r][c] = { type: 'H', part: 1 };
+                this.grid[r][c+1] = { type: 'H', part: 2 };
+                
+                this.grid[r+1][c] = { type: 'H', part: 1 };
+                this.grid[r+1][c+1] = { type: 'H', part: 2 };
             }
         }
         
-        // Validate full coverage
-        for (let r = 0; r < this.gridSize; r++) {
-            for (let c = 0; c < this.gridSize; c++) {
-                if (this.grid[r][c] === null) return false;
-            }
-        }
         return true;
     }
 
